@@ -195,10 +195,10 @@ export const DeployButton = ({
               className={classNames(
                 'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
                 {
-                  'opacity-60 cursor-not-allowed': isDeploying || !canDeploy || runtimeDown || !vercelConn.user,
+                  'opacity-60 cursor-not-allowed': isDeploying || !canDeploy || !vercelConn.user,
                 },
               )}
-              disabled={isDeploying || !canDeploy || runtimeDown || !vercelConn.user}
+              disabled={isDeploying || !canDeploy || !vercelConn.user}
               onClick={handleVercelDeployClick}
             >
               <img

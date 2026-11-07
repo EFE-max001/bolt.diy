@@ -30,7 +30,7 @@ export function Header() {
           </span>
           <ClientOnly>
             {() => (
-              <div className="">
+              <div className="hidden md:block">
                 <HeaderActionButtons chatStarted={chat.started} />
               </div>
             )}

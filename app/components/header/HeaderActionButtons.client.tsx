@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react';
 import { useState } from 'react';
 import { DeployButton } from '~/components/deploy/DeployButton';
 import { ReportBugPanel } from '~/components/header/ReportBugPanel';
+import { isRuntimeUnavailable, runtimeStatus } from '~/lib/stores/runtime';
 import { workbenchStore } from '~/lib/stores/workbench';
 
 interface HeaderActionButtonsProps {
@@ -14,7 +15,9 @@ export function HeaderActionButtons({ chatStarted: _chatStarted }: HeaderActionB
   const previews = useStore(workbenchStore.previews);
   const activePreview = previews[activePreviewIndex];
 
-  const shouldShowButtons = activePreview;
+  const runtime = useStore(runtimeStatus);
+  const files = useStore(workbenchStore.files);
+  const shouldShowButtons = activePreview || (isRuntimeUnavailable(runtime) && Object.keys(files).length > 0);
 
   return (
     <div className="flex items-center gap-1">

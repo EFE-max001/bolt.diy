@@ -9,6 +9,7 @@ import type { JSX } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { toast } from 'react-toastify';
 import { EditorPanel } from './EditorPanel';
+import { FallbackPreview } from './FallbackPreview';
 import type { ElementInfo } from './Inspector';
 import { DEFAULT_TERMINAL_SIZE, TerminalTabs } from './terminal/TerminalTabs';
 
@@ -22,6 +23,7 @@ import { Slider, type SliderOptions } from '~/components/ui/Slider';
 import useViewport from '~/lib/hooks';
 import { chatStore } from '~/lib/stores/chat';
 import { usePreviewStore } from '~/lib/stores/previews';
+import { isRuntimeUnavailable, runtimeStatus } from '~/lib/stores/runtime';
 import { streamingState } from '~/lib/stores/streaming';
 import { workbenchStore, type WorkbenchViewType } from '~/lib/stores/workbench';
 import type { FileHistory } from '~/types/actions';
@@ -320,6 +322,7 @@ export const Workbench = memo(
     const canHideChat = showWorkbench || !showChat;
 
     const isSmallViewport = useViewport(1024);
+    const runtimeDown = isRuntimeUnavailable(useStore(runtimeStatus));
     const streaming = useStore(streamingState);
     const [isSyncing, setIsSyncing] = useState(false);
     const [loadedViews, setLoadedViews] = useState<Set<WorkbenchViewType>>(() => new Set(['code']));
@@ -428,7 +431,7 @@ export const Workbench = memo(
         >
           <div
             className={classNames(
-              'fixed top-[calc(var(--header-height)+1.2rem)] bottom-6 w-[var(--workbench-inner-width)] z-0 transition-[left,width] duration-200 bolt-ease-cubic-bezier',
+              'fixed top-[calc(var(--header-height)+1.2rem)] bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:bottom-6 w-[var(--workbench-inner-width)] z-0 transition-[left,width] duration-200 bolt-ease-cubic-bezier',
               {
                 'w-full': isSmallViewport,
                 'left-0': showWorkbench && isSmallViewport,
@@ -452,7 +455,7 @@ export const Workbench = memo(
                   <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
                   <div className="ml-auto" />
                   {selectedView === 'code' && (
-                    <div className="flex overflow-y-auto">
+                    <div className="hidden md:flex overflow-y-auto">
                       {/* Export Chat Button */}
                       <ExportChatButton exportChat={exportChat} />
 
@@ -513,7 +516,7 @@ export const Workbench = memo(
                   />
                 </div>
                 <Group orientation="vertical" className="flex-1 min-h-0">
-                  <Panel defaultSize={showTerminal ? 100 - DEFAULT_TERMINAL_SIZE : '100%'} minSize={20}>
+                  <Panel defaultSize={showTerminal && !runtimeDown ? 100 - DEFAULT_TERMINAL_SIZE : '100%'} minSize={20}>
                     <div className="relative h-full overflow-hidden">
                       <View initial={{ x: '0%' }} animate={{ x: selectedView === 'code' ? '0%' : '-100%' }}>
                         <EditorPanel
@@ -555,14 +558,22 @@ export const Workbench = memo(
                               </div>
                             }
                           >
-                            <Preview selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+                            {runtimeDown ? (
+                              <FallbackPreview />
+                            ) : (
+                              <Preview selectedElement={selectedElement} setSelectedElement={setSelectedElement} />
+                            )}
                           </Suspense>
                         </View>
                       ) : null}
                     </div>
                   </Panel>
-                  <Separator />
-                  <TerminalTabs />
+                  {!runtimeDown && (
+                    <>
+                      <Separator />
+                      <TerminalTabs />
+                    </>
+                  )}
                 </Group>
               </div>
             </div>

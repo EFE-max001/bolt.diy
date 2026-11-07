@@ -48,11 +48,13 @@ jobs:
       - name: Deploy preview to Cloudflare Workers
         if: steps.check-secrets.outputs.configured == 'true'
         id: deploy
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env-name=preview-${{ github.head_ref }} --branch=${{ github.head_ref }}
+          wranglerVersion: "4.148.0"
+          command: preview --name pr-${{ github.event.pull_request.number }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Preview deployment not configured
         if: steps.check-secrets.outputs.configured == 'false'
@@ -80,7 +82,7 @@ jobs:
             );
 
             const isConfigured = '${{ steps.check-secrets.outputs.configured }}' === 'true';
-            const deployUrl = '${{ steps.deploy.outputs.deployment-url }}' || 'https://preview-not-configured.example.com';
+            const deployUrl = '${{ steps.deploy.outputs.preview-url }}' || 'https://preview-not-configured.example.com';
 
             let commentBody;
             if (isConfigured) {
@@ -126,12 +128,17 @@ jobs:
             }
 
       - name: Run smoke tests on preview
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview-url }}
         run: |
           if [[ "${{ steps.check-secrets.outputs.configured }}" == "true" ]]; then
             echo "Running smoke tests on preview deployment..."
-            echo "Preview URL: ${{ steps.deploy.outputs.url }}"
-            # Basic HTTP check instead of Playwright tests
-            curl -f ${{ steps.deploy.outputs.url }} || echo "Preview environment check completed"
+            if [[ -z "$PREVIEW_URL" ]]; then
+              echo "::error::Cloudflare did not return a preview URL"
+              exit 1
+            fi
+            echo "Preview URL: $PREVIEW_URL"
+            curl --fail --silent --show-error "$PREVIEW_URL" >/dev/null
           else
             echo "✅ Smoke tests skipped - preview deployment not configured"
             echo "This is normal and expected when Cloudflare secrets are not available"
@@ -141,7 +148,7 @@ jobs:
         run: |
           echo "✅ Preview deployment workflow completed successfully"
           if [[ "${{ steps.check-secrets.outputs.configured }}" == "true" ]]; then
-            echo "🚀 Preview deployed to: ${{ steps.deploy.outputs.url }}"
+            echo "🚀 Preview deployed to: ${{ steps.deploy.outputs.preview-url }}"
           else
             echo "ℹ️ Preview deployment not configured (this is normal)"
           fi

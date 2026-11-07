@@ -20,6 +20,7 @@ import { ImportZipButton } from '~/components/chat/ImportZipButton';
 import DeployChatAlert from '~/components/deploy/DeployAlert';
 import { Menu } from '~/components/sidebar/Menu.client';
 import type { ElementInfo } from '~/components/workbench/Inspector';
+import { MobileTabBar } from '~/components/workbench/MobileTabBar';
 import { WorkbenchReopenButton } from '~/components/workbench/WorkbenchReopenButton';
 import { API_KEYS_UPDATED_EVENT, type ApiKeysUpdatedDetail } from '~/lib/api/apiKeys';
 
@@ -379,10 +380,18 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       >
         <ClientOnly>{() => <Menu />}</ClientOnly>
         {chatStarted && showChat && !showWorkbench && (
-          <WorkbenchReopenButton onClick={() => workbenchStore.showWorkbench.set(true)} />
+          <div className="hidden md:block">
+            <WorkbenchReopenButton onClick={() => workbenchStore.showWorkbench.set(true)} />
+          </div>
         )}
+        {chatStarted && <ClientOnly>{() => <MobileTabBar />}</ClientOnly>}
         <div className="flex flex-col lg:flex-row overflow-y-auto w-full h-full">
-          <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
+          <div
+            className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full', {
+              // Leave room for the phone tab bar.
+              'pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0': chatStarted,
+            })}
+          >
             {!chatStarted && (
               <div id="intro" className="mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
                 <h1 className="text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in">

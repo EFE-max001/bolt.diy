@@ -21,7 +21,7 @@ interface GitHubDeploymentDialogProps {
 
 export function GitHubDeploymentDialog({ isOpen, onClose, projectName, files }: GitHubDeploymentDialogProps) {
   const [repoName, setRepoName] = useState('');
-  const [isPrivate, setIsPrivate] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<GitHubUserResponse | null>(null);
   const [recentRepos, setRecentRepos] = useState<GitHubRepoInfo[]>([]);

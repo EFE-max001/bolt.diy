@@ -9,8 +9,10 @@ import { useGitLabDeploy } from '~/components/deploy/GitLabDeploy.client';
 import { GitLabDeploymentDialog } from '~/components/deploy/GitLabDeploymentDialog';
 import { useNetlifyDeploy } from '~/components/deploy/NetlifyDeploy.client';
 import { useVercelDeploy } from '~/components/deploy/VercelDeploy.client';
+import { collectSourceFiles } from '~/components/deploy/collectSourceFiles';
 import { isGitLabConnected } from '~/lib/stores/gitlabConnection';
 import { netlifyConnection } from '~/lib/stores/netlify';
+import { isRuntimeUnavailable, runtimeStatus } from '~/lib/stores/runtime';
 import { streamingState } from '~/lib/stores/streaming';
 import { vercelConnection } from '~/lib/stores/vercel';
 import { workbenchStore } from '~/lib/stores/workbench';
@@ -35,6 +37,15 @@ export const DeployButton = ({
   const [activePreviewIndex] = useState(0);
   const previews = useStore(workbenchStore.previews);
   const activePreview = previews[activePreviewIndex];
+  const runtime = useStore(runtimeStatus);
+  const projectFiles = useStore(workbenchStore.files);
+
+  /*
+   * Without the in-browser runtime there is never a live preview, but the project can still be
+   * deployed from source (Vercel builds it), so having files is enough.
+   */
+  const runtimeDown = isRuntimeUnavailable(runtime);
+  const canDeploy = !!activePreview || (runtimeDown && Object.keys(projectFiles).length > 0);
   const [isDeploying, setIsDeploying] = useState(false);
   const [deployingTo, setDeployingTo] = useState<'netlify' | 'vercel' | 'github' | 'gitlab' | null>(null);
   const isStreaming = useStore(streamingState);
@@ -88,6 +99,15 @@ export const DeployButton = ({
     try {
       if (onGitHubDeploy) {
         await onGitHubDeploy();
+      } else if (runtimeDown) {
+        // No runtime to build in: save the project source to GitHub so it can be opened on another device.
+        const sourceFiles = collectSourceFiles(workbenchStore.files.get());
+
+        if (Object.keys(sourceFiles).length > 0) {
+          setGithubDeploymentFiles(sourceFiles);
+          setGithubProjectName(workbenchStore.firstArtifact?.title || 'my-project');
+          setShowGitHubDeploymentDialog(true);
+        }
       } else {
         const result = await handleGitHubDeploy();
 
@@ -130,7 +150,7 @@ export const DeployButton = ({
       <div className="flex border border-bolt-elements-borderColor rounded-md overflow-hidden text-sm">
         <DropdownMenu.Root>
           <DropdownMenu.Trigger
-            disabled={isDeploying || !activePreview || isStreaming}
+            disabled={isDeploying || !canDeploy || isStreaming}
             className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60 px-3 py-1.5 text-xs bg-accent-500 text-white hover:text-bolt-elements-item-contentAccent [&:not(:disabled,.disabled)]:hover:bg-bolt-elements-button-primary-backgroundHover outline-accent-500 flex gap-1.7"
           >
             {isDeploying ? `Deploying to ${deployingTo}...` : 'Deploy'}
@@ -152,10 +172,10 @@ export const DeployButton = ({
               className={classNames(
                 'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
                 {
-                  'opacity-60 cursor-not-allowed': isDeploying || !activePreview || !netlifyConn.user,
+                  'opacity-60 cursor-not-allowed': isDeploying || !canDeploy || runtimeDown || !netlifyConn.user,
                 },
               )}
-              disabled={isDeploying || !activePreview || !netlifyConn.user}
+              disabled={isDeploying || !canDeploy || runtimeDown || !netlifyConn.user}
               onClick={handleNetlifyDeployClick}
             >
               <img
@@ -175,10 +195,10 @@ export const DeployButton = ({
               className={classNames(
                 'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
                 {
-                  'opacity-60 cursor-not-allowed': isDeploying || !activePreview || !vercelConn.user,
+                  'opacity-60 cursor-not-allowed': isDeploying || !canDeploy || !vercelConn.user,
                 },
               )}
-              disabled={isDeploying || !activePreview || !vercelConn.user}
+              disabled={isDeploying || !canDeploy || !vercelConn.user}
               onClick={handleVercelDeployClick}
             >
               <img
@@ -197,10 +217,10 @@ export const DeployButton = ({
               className={classNames(
                 'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
                 {
-                  'opacity-60 cursor-not-allowed': isDeploying || !activePreview,
+                  'opacity-60 cursor-not-allowed': isDeploying || !canDeploy,
                 },
               )}
-              disabled={isDeploying || !activePreview}
+              disabled={isDeploying || !canDeploy}
               onClick={handleGitHubDeployClick}
             >
               <img
@@ -218,10 +238,10 @@ export const DeployButton = ({
               className={classNames(
                 'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
                 {
-                  'opacity-60 cursor-not-allowed': isDeploying || !activePreview || !gitlabIsConnected,
+                  'opacity-60 cursor-not-allowed': isDeploying || !canDeploy || runtimeDown || !gitlabIsConnected,
                 },
               )}
-              disabled={isDeploying || !activePreview || !gitlabIsConnected}
+              disabled={isDeploying || !canDeploy || runtimeDown || !gitlabIsConnected}
               onClick={handleGitLabDeployClick}
             >
               <img

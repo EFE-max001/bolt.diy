@@ -5,7 +5,21 @@ import type { IProviderSetting } from '~/types/model';
 import { logger } from '~/utils/logger';
 
 interface OpenAIModelsResponse {
-  data: Array<{ id: string }>;
+  data: Array<{
+    id: string;
+
+    // Not part of the OpenAI spec, but several compatible providers report them.
+    max_output_tokens?: number;
+    max_completion_tokens?: number;
+  }>;
+}
+
+const DEFAULT_MAX_OUTPUT_TOKENS = 8000;
+
+function toPositiveInt(value: unknown): number | undefined {
+  const parsed = typeof value === 'number' ? value : parseInt(String(value ?? ''), 10);
+
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined;
 }
 
 export default class OpenAILikeProvider extends BaseProvider {
@@ -51,11 +65,22 @@ export default class OpenAILikeProvider extends BaseProvider {
 
       const res = (await response.json()) as OpenAIModelsResponse;
 
+      /*
+       * Whole-site generation needs a high output limit. Prefer what the provider reports for the
+       * model, then OPENAI_LIKE_API_MAX_TOKENS, then the conservative default.
+       */
+
+      const configuredMax = toPositiveInt(serverEnv.OPENAI_LIKE_API_MAX_TOKENS ?? settings?.OPENAI_LIKE_API_MAX_TOKENS);
+
       return res.data.map((model) => ({
         name: model.id,
         label: model.id,
         provider: this.name,
-        maxTokenAllowed: 8000,
+        maxTokenAllowed:
+          toPositiveInt(model.max_output_tokens) ??
+          toPositiveInt(model.max_completion_tokens) ??
+          configuredMax ??
+          DEFAULT_MAX_OUTPUT_TOKENS,
       }));
     } catch (error) {
       logger.info(`${this.name}: Could not fetch /models endpoint, checking fallback env`, error);

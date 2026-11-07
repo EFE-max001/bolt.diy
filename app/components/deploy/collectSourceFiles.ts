@@ -13,7 +13,7 @@ function isSensitivePath(relativePath: string) {
       name === '.env' ||
       name.startsWith('.env.') ||
       SENSITIVE_FILE_NAMES.has(name) ||
-      /\\.(pem|key|p12|pfx|keystore)$/i.test(name)
+      /\.(pem|key|p12|pfx|keystore)$/i.test(name)
     );
   });
 }

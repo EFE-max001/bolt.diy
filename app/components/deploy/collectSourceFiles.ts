@@ -1,7 +1,22 @@
 import type { FileMap } from '~/lib/stores/files';
 import { WORK_DIR } from '~/utils/constants';
 
-const SKIPPED_SEGMENTS = new Set(['node_modules', '.git', '.next', '.vercel', 'dist', 'build']);
+const SKIPPED_SEGMENTS = new Set(['node_modules', '.git', '.next', '.vercel', 'dist', 'build', '.ssh', '.aws']);
+const SENSITIVE_FILE_NAMES = new Set(['.npmrc', '.netrc', '.pypirc', '.dockerconfigjson', 'credentials.json']);
+
+function isSensitivePath(relativePath: string) {
+  return relativePath.split('/').some((segment) => {
+    const name = segment.toLowerCase();
+
+    return (
+      SKIPPED_SEGMENTS.has(name) ||
+      name === '.env' ||
+      name.startsWith('.env.') ||
+      SENSITIVE_FILE_NAMES.has(name) ||
+      /\\.(pem|key|p12|pfx|keystore)$/i.test(name)
+    );
+  });
+}
 
 /**
  * Collects the project's text source files straight from the editor's file store, so a deploy
@@ -17,7 +32,7 @@ export function collectSourceFiles(files: FileMap): Record<string, string> {
 
     const relative = absolutePath.slice(WORK_DIR.length + 1);
 
-    if (relative.split('/').some((segment) => SKIPPED_SEGMENTS.has(segment))) {
+    if (isSensitivePath(relative)) {
       continue;
     }
 

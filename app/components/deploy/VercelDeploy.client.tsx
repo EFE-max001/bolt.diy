@@ -1,11 +1,9 @@
 import { useStore } from '@nanostores/react';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
-import { collectSourceFiles } from './collectSourceFiles';
 import { formatBuildFailureOutput } from './deployUtils';
 import { chatId } from '~/lib/persistence/useChatHistory';
 import type { ActionCallbackData } from '~/lib/runtime/message-parser';
-import { isRuntimeUnavailable, runtimeStatus } from '~/lib/stores/runtime';
 import { vercelConnection } from '~/lib/stores/vercel';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { webcontainer } from '~/lib/webcontainer';
@@ -46,53 +44,6 @@ export function useVercelDeploy() {
       });
 
       const deployArtifact = workbenchStore.artifacts.get()[deploymentId];
-
-      /*
-       * No in-browser runtime (common on phones): skip the local build and let Vercel build
-       * the project from source instead.
-       */
-      if (isRuntimeUnavailable(runtimeStatus.get())) {
-        const sourceFiles = collectSourceFiles(workbenchStore.files.get());
-
-        if (Object.keys(sourceFiles).length === 0) {
-          throw new Error('No project files to deploy');
-        }
-
-        deployArtifact.runner.handleDeployAction('deploying', 'running', { source: 'vercel' });
-
-        const existingId = localStorage.getItem(`vercel-project-${currentChatId}`);
-
-        const sourceResponse = await fetch('/api/vercel-deploy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectId: existingId || undefined,
-            files: sourceFiles,
-            sourceFiles,
-            token: vercelConn.token,
-            chatId: currentChatId,
-          }),
-        });
-
-        const sourceData = (await sourceResponse.json()) as any;
-
-        if (!sourceResponse.ok || !sourceData.deploy || !sourceData.project) {
-          deployArtifact.runner.handleDeployAction('deploying', 'failed', {
-            error: sourceData.error || 'Invalid deployment response',
-            source: 'vercel',
-          });
-          throw new Error(sourceData.error || 'Invalid deployment response');
-        }
-
-        localStorage.setItem(`vercel-project-${currentChatId}`, sourceData.project.id);
-        deployArtifact.runner.handleDeployAction('complete', 'complete', {
-          url: sourceData.deploy.url,
-          source: 'vercel',
-        });
-        toast.success('🚀 Vercel deployment completed successfully!');
-
-        return true;
-      }
 
       // Notify that build is starting
       deployArtifact.runner.handleDeployAction('building', 'running', { source: 'vercel' });

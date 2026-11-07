@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { FileMap } from '~/lib/stores/files';
 import { collectSourceFiles } from './collectSourceFiles';
+import type { FileMap } from '~/lib/stores/files';
 import { WORK_DIR } from '~/utils/constants';
 
 const textFile = (content: string) => ({ type: 'file' as const, content, isBinary: false });

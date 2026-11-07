@@ -41,7 +41,8 @@ export function FallbackPreview() {
           {status === 'unsupported'
             ? 'This browser or connection can’t run the in-browser runtime.'
             : 'The in-browser runtime failed to start, usually because the phone ran out of memory.'}
-          {error ? ` (${error})` : ''} You can still edit files. Open the project on a computer for the full terminal and live preview.
+          {error ? ` (${error})` : ''}
+          You can still edit files. Open the project on a computer for the full terminal and live preview.
         </div>
       )}
 
@@ -49,6 +50,7 @@ export function FallbackPreview() {
         <iframe
           title="Static preview"
           className="min-h-0 w-full flex-1 bg-white"
+
           // No allow-same-origin: generated code must not reach this app's storage or API keys.
           sandbox="allow-scripts allow-forms allow-modals allow-popups"
           srcDoc={preview.html}
@@ -57,7 +59,8 @@ export function FallbackPreview() {
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-bolt-elements-textSecondary">
           <span className="i-ph:device-mobile text-3xl" aria-hidden="true" />
           <p>
-            This project needs a build step that cannot run in this device’s fallback preview. Open it on a computer to use the full development server and preview.
+            This project needs a build step that cannot run in this device’s fallback preview. Open it on a computer to use the full
+            development server and preview.
           </p>
         </div>
       )}

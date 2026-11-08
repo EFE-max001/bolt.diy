@@ -101,7 +101,7 @@ try {
   const server = await command([
     "bash",
     "-lc",
-    "cd /workspace/preview-demo && nohup npm run dev -- --host 0.0.0.0 --port 5173 --strictPort > /tmp/vite.log 2>&1 < /dev/null & echo $!",
+    "cd /workspace/preview-demo && nohup npm run dev -- --host 0.0.0.0 --port 5173 --strictPort --base /v1/workspaces/demo/preview/ > /tmp/vite.log 2>&1 < /dev/null & echo $!",
   ]);
   console.log(`Vite process: ${server.output.trim()}`);
 
@@ -125,6 +125,20 @@ try {
     throw new Error(`Preview did not become ready. Vite logs:\n${logs.output}`);
   }
 
+  const viteClient = await call(`${workspace}/preview/@vite/client`);
+  const viteClientText =
+    typeof viteClient.body.raw === "string"
+      ? viteClient.body.raw
+      : JSON.stringify(viteClient.body);
+
+  if (!viteClient.response.ok || !viteClientText.includes("createHotContext")) {
+    throw new Error("The Vite client asset did not load through the preview path.");
+  }
+
+  const mainModule = await call(`${workspace}/preview/src/main.jsx`);
+  if (!mainModule.response.ok) {
+    throw new Error(`The Vite entry module failed to load (${mainModule.response.status}).`);
+  }
   console.log("5/6 Editing a React component and checking the updated module...");
   await command([
     "bash",

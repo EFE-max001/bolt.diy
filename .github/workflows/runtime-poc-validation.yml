@@ -1,0 +1,56 @@
+name: Runtime POC validation
+
+on:
+  push:
+    branches:
+      - experiment/cloudflare-runtime-poc
+    paths:
+      - "runtime-poc/**"
+      - ".github/workflows/runtime-poc-validation.yml"
+      - "pnpm-lock.yaml"
+      - "package.json"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "runtime-poc/**"
+      - ".github/workflows/runtime-poc-validation.yml"
+      - "pnpm-lock.yaml"
+      - "package.json"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate isolated runtime prototype
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Cloudflare runtime types
+        run: pnpm exec wrangler types runtime-poc/worker-configuration.d.ts --config runtime-poc/wrangler.jsonc
+
+      - name: Type-check runtime prototype
+        run: pnpm exec tsc --noEmit --pretty false --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution Bundler --types @cloudflare/workers-types runtime-poc/src/index.ts runtime-poc/worker-configuration.d.ts
+
+      - name: Check smoke-test JavaScript syntax
+        run: |
+          node --check runtime-poc/smoke-test.mjs
+          node --check runtime-poc/preview-smoke.mjs

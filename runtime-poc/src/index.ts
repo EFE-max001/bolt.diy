@@ -67,7 +67,7 @@ export class WorkspaceRuntime extends DurableObject<RuntimeEnv> {
       const snapshot = await this.ctx.storage.get<ContainerSnapshot>("containerSnapshot");
 
       if (snapshot) {
-        container.start({
+        await container.start({
           containerSnapshot: snapshot,
           enableInternet: true,
           instance: "standard-1",
@@ -76,7 +76,7 @@ export class WorkspaceRuntime extends DurableObject<RuntimeEnv> {
         return { restored: true };
       }
 
-      container.start({
+      await container.start({
         image: container.images.base,
         enableInternet: true,
         instance: "standard-1",
@@ -209,7 +209,7 @@ export class WorkspaceRuntime extends DurableObject<RuntimeEnv> {
     const previewPath = url.pathname.replace(/^\/preview(?=\/|$)/, "") || "/";
 
     url.protocol = "http:";
-    url.host = "container";
+    url.host = "localhost";
     url.pathname = previewPath;
 
     const forwarded = new Request(url, request);

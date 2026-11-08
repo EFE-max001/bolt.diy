@@ -7,7 +7,7 @@ This folder is a separate Cloudflare Worker and Container experiment. It does no
 - A dedicated Linux container with Node.js, npm, pnpm, Git, Bash, and common build tools.
 - A single authenticated demo workspace.
 - Remote command execution inside that workspace.
-- HTTP preview forwarding from port 5173 (Vite's default development port).
+- Authenticated HTTP preview forwarding from port 5173 (Vite's default development port).
 - Filesystem checkpoints using Cloudflare Container snapshots.
 - Restore after stopping and recreating the container.
 - An inactivity timeout that stops keeping the test container active after five minutes without workspace requests.
@@ -16,7 +16,7 @@ The prototype is intentionally limited to the workspace ID `demo`. It is not con
 
 The test currently requests the `standard-1` Container size (1/2 vCPU, 4 GiB memory, 8 GB disk) because the smallest `lite` size has only 256 MiB RAM and is not a sensible baseline for a Node/npm development environment. This makes the live test more resource-intensive.
 
-The preview check verifies HTTP preview delivery and updated source retrieval. It does **not** yet verify browser HMR WebSocket forwarding or a full interactive editor experience.
+The preview smoke test checks the HTML response, Vite client and entry-module assets through the proxy, and updated source retrieval. It does **not** yet verify a real browser iframe, HMR WebSocket forwarding, or a full interactive editor experience. The current authenticated preview endpoint is intended for the smoke-test client; an iframe cannot attach its Authorization header. A separate preview origin and short-lived preview authorization are required before UI integration.
 
 ## Billing and prerequisites
 
@@ -97,7 +97,7 @@ Read status:
 GET /v1/workspaces/demo/status
 ```
 
-Preview requests are forwarded to port 5173:
+Authenticated preview requests are forwarded to port 5173. The smoke test starts Vite with the matching `/v1/workspaces/demo/preview/` base path so asset requests are routed through the Worker:
 
 ```text
 https://YOUR-RUNTIME-WORKER.workers.dev/v1/workspaces/demo/preview/
@@ -111,7 +111,7 @@ The smaller test checks that a file survives a container stop and snapshot resto
 RUNTIME_POC_URL=https://YOUR-RUNTIME-WORKER.workers.dev RUNTIME_POC_TOKEN=YOUR_TOKEN node runtime-poc/smoke-test.mjs
 ```
 
-The fuller preview test creates a Vite + React app, installs dependencies, starts Vite on port 5173, retrieves the preview, edits a component, checks that the updated source is served, snapshots/stops/restores the container, and verifies that the edit survived:
+The fuller preview test creates a Vite + React app, installs dependencies, starts Vite on port 5173, retrieves the HTML and Vite assets through the preview proxy, edits a component, checks that the updated source is served, snapshots/stops/restores the container, and verifies that the edit survived. It is not a browser/HMR test:
 
 ```bash
 RUNTIME_POC_URL=https://YOUR-RUNTIME-WORKER.workers.dev RUNTIME_POC_TOKEN=YOUR_TOKEN node runtime-poc/preview-smoke.mjs

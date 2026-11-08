@@ -15,16 +15,17 @@ Prove that one generated project can use a real Linux workspace rather than the 
 
 ## Selected Cloudflare building blocks
 
-Use Cloudflare's official `@cloudflare/sandbox` 1.x package with the Containers API:
+Use the native Cloudflare Durable Object Container API for the first runtime proof:
 
 - A Durable Object owns one workspace Container and serializes workspace operations.
 - The Container runs Node.js, package managers, Vite, and generated project code.
-- `Files` moves project files between the Worker and the Container.
-- `DirectoryBackup` saves/restores the project directory in R2. R2 credentials stay in the Worker; they are never passed into generated code.
+- Container `exec()` runs commands and returns process output and exit codes.
+- Container snapshots provide the first stop/restore proof. They are temporary checkpoints, not permanent project storage.
+- The next persistence step is an R2-backed archive or `DirectoryBackup`. R2 access stays in the Worker; credentials are never passed into generated code.
 - Container port forwarding provides the preview path. A later UI phase can attach the existing xterm.js terminal to a persistent PTY.
 - Worker authentication and per-workspace authorization must be in place before exposing command execution or preview URLs publicly.
 
-Cloudflare's current 1.x API differs from the older 0.x Sandbox SDK. Do not copy 0.x examples such as `getSandbox()`, `startProcess()`, or `SandboxAddon` into this implementation. Follow the current Container API and 1.x examples.
+Do not mix this native Container API prototype with older `@cloudflare/sandbox` 0.x examples. If the 1.x SDK is added later, use its current API and matching container helper image.
 
 ## Security requirements
 
@@ -62,6 +63,7 @@ The POC should first prove a manual save/restore cycle. Automatic checkpoints an
 - [ ] A project backup is written to R2.
 - [ ] After destroying/restarting the Container, restoring the backup recovers the project.
 - [ ] Preview and command routes reject unauthenticated requests.
+- [ ] A separate preview origin supports ordinary iframe navigation without exposing the Bolt app origin to generated code.
 - [ ] No R2 or Cloudflare credentials are visible inside the project Container.
 
 ## Deployment note

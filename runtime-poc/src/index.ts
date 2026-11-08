@@ -35,7 +35,7 @@ function messageFromError(error: unknown): string {
 }
 
 function isSafeWorkspacePath(value: string): boolean {
-  if (!value.startsWith("/workspace")) {
+  if (value !== "/workspace" && !value.startsWith("/workspace/")) {
     return false;
   }
 
@@ -85,15 +85,16 @@ export class WorkspaceRuntime extends DurableObject<RuntimeEnv> {
 
   private async readCommandPayload(request: Request): Promise<CommandPayload | Response> {
     const contentLength = Number(request.headers.get("content-length") ?? "0");
+    const rawBody = await request.text();
 
-    if (contentLength > 24_000) {
+    if (contentLength > 24_000 || rawBody.length > 24_000) {
       return json({ error: "Command request is too large" }, 413);
     }
 
     let payload: unknown;
 
     try {
-      payload = await request.json();
+      payload = JSON.parse(rawBody);
     } catch {
       return json({ error: "Expected a valid JSON request body" }, 400);
     }
@@ -157,9 +158,10 @@ export class WorkspaceRuntime extends DurableObject<RuntimeEnv> {
       }
     }, COMMAND_TIMEOUT_MS);
 
-    const output = await process.output();
-    exited = true;
-    clearTimeout(timeout);
+    const output = await process.output().finally(() => {
+      exited = true;
+      clearTimeout(timeout);
+    });
 
     const decoder = new TextDecoder();
     const stdout = decoder.decode(output.stdout);

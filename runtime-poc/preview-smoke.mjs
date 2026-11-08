@@ -63,12 +63,12 @@ try {
   const bootstrap = await command([
     "bash",
     "-lc",
-    "mkdir -p /workspace && nohup bash -lc 'cd /workspace && npm create vite@latest preview-demo -- --template react && cd /workspace/preview-demo && npm install' > /tmp/vite-bootstrap.log 2>&1 < /dev/null & echo $!",
+    "mkdir -p /workspace && nohup bash -lc 'cd /workspace && npm create vite@latest preview-demo -- --template react --no-interactive && cd /workspace/preview-demo && npm install' > /tmp/vite-bootstrap.log 2>&1 < /dev/null & echo $!",
   ]);
   console.log(`Bootstrap process: ${bootstrap.output.trim()}`);
 
   let installed = false;
-  for (let attempt = 0; attempt < 90; attempt += 1) {
+  for (let attempt = 0; attempt < 180; attempt += 1) {
     const check = await call(`${workspace}/commands`, {
       method: "POST",
       body: JSON.stringify({

@@ -70,7 +70,7 @@ export class WorkspaceRuntime extends DurableObject<RuntimeEnv> {
         container.start({
           containerSnapshot: snapshot,
           enableInternet: true,
-          instance: "lite",
+          instance: "standard-1",
         });
         await container.setInactivityTimeout(CONTAINER_IDLE_TIMEOUT_MS);
         return { restored: true };
@@ -79,7 +79,7 @@ export class WorkspaceRuntime extends DurableObject<RuntimeEnv> {
       container.start({
         image: container.images.base,
         enableInternet: true,
-        instance: "lite",
+        instance: "standard-1",
       });
       await container.setInactivityTimeout(CONTAINER_IDLE_TIMEOUT_MS);
 

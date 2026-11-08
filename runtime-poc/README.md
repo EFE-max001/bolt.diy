@@ -14,6 +14,8 @@ This folder is a separate Cloudflare Worker and Container experiment. It does no
 
 The prototype is intentionally limited to the workspace ID `demo`. It is not connected to Bolt's chat UI and is not a multi-user service.
 
+The test currently requests the `standard-1` Container size (1/2 vCPU, 4 GiB memory, 8 GB disk) because the smallest `lite` size has only 256 MiB RAM and is not a sensible baseline for a Node/npm development environment. This makes the live test more resource-intensive.
+
 The preview check verifies HTTP preview delivery and updated source retrieval. It does **not** yet verify browser HMR WebSocket forwarding or a full interactive editor experience.
 
 ## Billing and prerequisites

@@ -127,6 +127,8 @@ The test automatically attempts to snapshot and stop the workspace in its `final
 
 ## Snapshot limitations
 
+This is a disposable proof of concept, not a safe place to keep real project files yet. The five-minute inactivity timeout can stop an idle container without taking a snapshot. Any file changes made after the last explicit snapshot can therefore be lost when the container stops. The smoke test explicitly snapshots before stopping, but normal idle shutdown does not.
+
 Snapshots capture filesystem state, not process memory or running processes. The Vite server must be started again after a restore. Snapshots are immutable, are tied to the container image they were created from, and currently have a 30-day time-to-live that refreshes when restored.
 
 This is a checkpoint mechanism for the experiment, not yet the permanent project-backup design. The production architecture should use a Worker-managed R2 binding for durable source files and backups. R2 credentials should not be passed into containers that execute user code, because that code could read them.

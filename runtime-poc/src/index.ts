@@ -20,6 +20,7 @@ const MAX_COMMAND_ARGUMENTS = 48;
 const MAX_ARGUMENT_LENGTH = 4_096;
 const MAX_COMMAND_OUTPUT = 80_000;
 const COMMAND_TIMEOUT_MS = 30_000;
+const CONTAINER_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
 function json(data: unknown, status = 200): Response {
   return Response.json(data, {
@@ -59,6 +60,7 @@ export class WorkspaceRuntime extends DurableObject<RuntimeEnv> {
       const container = this.getContainer();
 
       if (container.running) {
+        await container.setInactivityTimeout(CONTAINER_IDLE_TIMEOUT_MS);
         return { restored: false };
       }
 
@@ -68,16 +70,18 @@ export class WorkspaceRuntime extends DurableObject<RuntimeEnv> {
         container.start({
           containerSnapshot: snapshot,
           enableInternet: true,
-          instance: "basic",
+          instance: "lite",
         });
+        await container.setInactivityTimeout(CONTAINER_IDLE_TIMEOUT_MS);
         return { restored: true };
       }
 
       container.start({
         image: container.images.base,
         enableInternet: true,
-        instance: "basic",
+        instance: "lite",
       });
+      await container.setInactivityTimeout(CONTAINER_IDLE_TIMEOUT_MS);
 
       return { restored: false };
     });
@@ -145,6 +149,7 @@ export class WorkspaceRuntime extends DurableObject<RuntimeEnv> {
     const startResult = await this.ensureRunning();
     const process = await container.exec(payload.command, {
       cwd: payload.cwd,
+      stdout: "pipe",
       stderr: "combined",
     });
 

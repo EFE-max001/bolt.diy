@@ -48,7 +48,7 @@ jobs:
         run: pnpm exec wrangler types runtime-poc/worker-configuration.d.ts --config runtime-poc/wrangler.jsonc
 
       - name: Type-check runtime prototype
-        run: pnpm exec tsc --noEmit --pretty false --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution Bundler --types @cloudflare/workers-types runtime-poc/src/index.ts runtime-poc/worker-configuration.d.ts
+        run: pnpm exec tsc --project runtime-poc/tsconfig.json --pretty false
 
       - name: Check smoke-test JavaScript syntax
         run: |
